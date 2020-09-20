@@ -94,60 +94,29 @@ def mykmeans(X, k, c, tolerance=0.0001, max_iterations=10000):
     return clusters, c, max_iterations
 
 
+def createData(mu_list, sigma, N):
+    sample = []
+    for mu in mu_list:
+        sample.append(np.random.multivariate_normal(mu, sigma, N))
+
+    X = np.concatenate((sample[0], sample[1], sample[2]))
+
+    return X
+
+
 if __name__ == "__main__":
 
-    mu1 = [1, 0]
-    mu2 = [0, 1.5]
-    sigma1 = np.matrix('0.9 0.4; 0.4 0.9')
-    sigma2 = np.matrix('0.9 0.4; 0.4 0.9')
+    mu_list = [[-3,0],[3,0],[0,3]]
+    sigma = np.array([[1,0.75],[0.75,1]])
+    N = 10
 
-    # SAMPLE 1
-    x, y = np.random.multivariate_normal(mu1, sigma1, 500).T
-    # SAMPLE 2
-    a, b = np.random.multivariate_normal(mu2, sigma2, 500).T
-
-    sampleSet = []
-    samples = []
-
-    # Combining to create SampleSet
-    for i in range(len(x)):
-        sampleSet.append([x[i], y[i]])
-        sampleSet.append([a[i], b[i]])
-
-    print("Plot created sample set")
-
-    # draw initial dataset
-    plt.scatter(x, y)
-    plt.scatter(a, b)
+    X = createData(mu_list, sigma, N)
+    plt.scatter(X[0:10][:,0], X[0:10][:,1])
+    plt.scatter(X[10:20][:,0], X[10:20][:,1])
+    plt.scatter(X[20:30][:,0], X[20:30][:,1])
     plt.show()
 
-    print("-----------------------------------------------------------------------------------")
+    c = [[1, 0], [-1, 0], [0, 1], [0, -1]]
 
-    # TEST CASE 1---------------------------------------------------------------------
-    print('Test 1, k = 2, Centers = [[10, 10], [-10, -10]]')
-    # initialize centers
-    c = [[10, 10], [-10, -10]]
-
-    clusters, centers, iterations = mykmeans(sampleSet, 2, c)
-
-
-    print("New centers are: " + str(centers))
-    print("Number of iterations: " + str(iterations))
-
+    clusters, centers, iterations = mykmeans(X, 4, c)
     drawClusters(clusters, centers)
-
-    print("-----------------------------------------------------------------------------------")
-
-    # TEST CASE 2---------------------------------------------------------------------
-    print('Test 2: k = 4, Centers = [[10, 10], [-10, -10], [10, -10], [-10, 10]]')
-    # initialize centers
-    c = [[10, 10], [-10, -10], [10, -10], [-10, 10]]
-
-    clusters, centers, iterations = mykmeans(sampleSet, 4, c)
-
-    print("New centers are: " + str(centers))
-    print("Number of iterations: " + str(iterations))
-
-    drawClusters(clusters, centers)
-
-    print("-----------------------------------------------------------------------------------")
