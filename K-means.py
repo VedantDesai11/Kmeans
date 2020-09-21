@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 from copy import deepcopy
+import secrets
 
 
 def drawClusters(clusters, centers):
@@ -106,17 +107,32 @@ def createData(mu_list, sigma, N):
 
 if __name__ == "__main__":
 
+
+    # PARAMETERS
     mu_list = [[-3,0],[3,0],[0,3]]
     sigma = np.array([[1,0.75],[0.75,1]])
-    N = 10
+    k = 3
+    N = 100
+    split = N//3
+    i = 0
+    initial_centers = []
 
     X = createData(mu_list, sigma, N)
-    plt.scatter(X[0:10][:,0], X[0:10][:,1])
-    plt.scatter(X[10:20][:,0], X[10:20][:,1])
-    plt.scatter(X[20:30][:,0], X[20:30][:,1])
+    plt.scatter(X[i:i+split][:,0], X[i:i+split][:,1])
+    i = i + split
+    plt.scatter(X[i:i+split][:,0], X[i:i+split][:,1])
+    i = i + split
+    plt.scatter(X[i:i+split][:,0], X[i:i+split][:,1])
     plt.show()
 
-    c = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+    for _ in range(k):
+        pick = list(secrets.choice(X))
+        while pick in initial_centers:
+            pick = list(secrets.choice(X))
 
-    clusters, centers, iterations = mykmeans(X, 4, c)
+        initial_centers.append(pick)
+
+    print(initial_centers)
+
+    clusters, centers, iterations = mykmeans(X, k, c)
     drawClusters(clusters, centers)
