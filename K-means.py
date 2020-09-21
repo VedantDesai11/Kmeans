@@ -3,9 +3,10 @@ import matplotlib.pyplot as plt
 import math
 from copy import deepcopy
 import secrets
+from itertools import permutations
 
 
-def drawClusters(clusters, centers):
+def drawClusters(clusters, centers, k, mu):
 
     clusterX = []
     clusterY = []
@@ -23,6 +24,8 @@ def drawClusters(clusters, centers):
         plt.scatter([centers[x][0]], [centers[x][1]], marker='X', s=20 * 4)
 
     plt.show()
+    plt.savefig(f'Clusters={k}_mu={mu}')
+
 
 def euclideanDistance(one, two):
     squared_distance = 0
@@ -36,103 +39,128 @@ def euclideanDistance(one, two):
 
     return ed;
 
-def mykmeans(X, k, c, tolerance=0.0001, max_iterations=10000):
 
-    if (len(c) != k):
-        exit("K and number of centroids not matching")
-    else:
+def mykmeans(X, k, tolerance=0.0001, max_iterations=10000):
 
-        # iterate 10000 times
-        for x in range(max_iterations):
+    c = []
 
-            clusters = []
+    # create random initial centers
+    for _ in range(k):
+        pick = list(secrets.choice(X))
+        while pick in c:
+            pick = list(secrets.choice(X))
 
-            # create 2d list for nodes in clusters
+        c.append(pick)
+
+    print(f"Random points as initial centers = {[[round(val, 2) for val in center] for center in c]}")
+
+    # iterate 10000 times
+    for x in range(max_iterations):
+
+        clusters = []
+
+        # create 2d list for nodes in clusters
+        for i in range(len(c)):
+            clusters.append([])
+
+        # categorise data points into their clusters
+        for i in range(len(X)):
+
+            # Compute distance between data points and centroids
+            tempDistance = 100000
+            index = 0
+
+            for j in range(len(c)):
+                dist = euclideanDistance(X[i], c[j])
+                if dist < tempDistance:
+                    tempDistance = dist
+                    index = j
+
+            clusters[index].append(X[i])
+
+        oldCentroids = deepcopy(c)
+
+        # Update centroids with avg x,y values of each cluster nodes
+        for i in range(len(clusters)):
+
+            totalX = 0
+            totalY = 0
+            for x in range(len(clusters[i])):
+                totalX = totalX + float(clusters[i][x][0])
+                totalY = totalY + float(clusters[i][x][1])
+
+            if len(clusters[i]) != 0:
+                newX = totalX / len(clusters[i])
+                newY = totalY / len(clusters[i])
+                c[i] = [newX, newY]
+
+        # Check threshold with old value
+        if x != 0:
+            toleranceCheck = 0
             for i in range(len(c)):
-                clusters.append([])
+                if euclideanDistance(oldCentroids[i], c[i]) <= tolerance:
+                    toleranceCheck += 1
 
-            # categorise data points into their clusters
-            for i in range(len(X)):
-
-                # Compute distance between data points and centroids
-                tempDistance = 100000
-                index = 0
-
-                for j in range(len(c)):
-                    dist = euclideanDistance(X[i], c[j])
-                    if dist < tempDistance:
-                        tempDistance = dist
-                        index = j
-
-                clusters[index].append(X[i])
-
-            oldCentroids = deepcopy(c)
-
-            # Update centroids with avg x,y values of each cluster nodes
-            for i in range(len(clusters)):
-
-                totalX = 0
-                totalY = 0
-                for x in range(len(clusters[i])):
-                    totalX = totalX + float(clusters[i][x][0])
-                    totalY = totalY + float(clusters[i][x][1])
-
-                if len(clusters[i]) != 0:
-                    newX = totalX / len(clusters[i])
-                    newY = totalY / len(clusters[i])
-                    c[i] = [newX, newY]
-
-            # Check threshold with old value
-            if x != 0:
-                toleranceCheck = 0
-                for i in range(len(c)):
-                    if euclideanDistance(oldCentroids[i], c[i]) <= tolerance:
-                        toleranceCheck += 1
-
-                if toleranceCheck == len(c):
-                    return clusters, c, x
+            if toleranceCheck == len(c):
+                return clusters, c, x
 
     return clusters, c, max_iterations
 
 
 def createData(mu_list, sigma, N):
     sample = []
-    for mu in mu_list:
+    l = []
+    for i, mu in enumerate(mu_list):
         sample.append(np.random.multivariate_normal(mu, sigma, N))
+        l.append(np.zeros(N) + i)
 
     X = np.concatenate((sample[0], sample[1], sample[2]))
+    label = np.concatenate((l[0], l[1], l[2]))
 
-    return X
+    return X, label
+
+
+def getAccuracy(X, y, clusters):
+
+    combinations = list(permutations([0, 1, 2]))
+    accuracies = []
+    for combination in combinations:
+        labels = np.zeros(len(X))
+        for label, cluster in enumerate(clusters):
+            for point in cluster:
+                index = np.where(X == point)[0][0]
+                labels[index] = combination[label]
+
+        accuracies.append(round(len([labels[i] for i in range(0, len(labels)) if labels[i] == y[i]]) / len(labels) * 100, 2))
+
+    return max(accuracies)
 
 
 if __name__ == "__main__":
 
-
     # PARAMETERS
-    mu_list = [[-3,0],[3,0],[0,3]]
+    mu_lists = [[[-3, 0], [3, 0], [0, 3]], [[-2, 0], [2, 0], [0, 2]]]
+    #mu_list = [[-2, 0], [2, 0], [0, 2]]
     sigma = np.array([[1,0.75],[0.75,1]])
-    k = 3
-    N = 100
-    split = N//3
-    i = 0
-    initial_centers = []
+    k_list = [2,3,4,5]
+    N = 300
 
-    X = createData(mu_list, sigma, N)
-    plt.scatter(X[i:i+split][:,0], X[i:i+split][:,1])
-    i = i + split
-    plt.scatter(X[i:i+split][:,0], X[i:i+split][:,1])
-    i = i + split
-    plt.scatter(X[i:i+split][:,0], X[i:i+split][:,1])
-    plt.show()
+    for k in k_list:
+        for mu_list in mu_lists:
+            
+            i = 0
+            X, label = createData(mu_list, sigma, N)
+            plt.scatter(X[i:i+N][:,0], X[i:i+N][:,1])
+            i = i + N
+            plt.scatter(X[i:i+N][:,0], X[i:i+N][:,1])
+            i = i + N
+            plt.scatter(X[i:i+N][:,0], X[i:i+N][:,1])
+            plt.show()
+            plt.savefig(f'Inital_Data_mu={mu_list}_k={k}')
 
-    for _ in range(k):
-        pick = list(secrets.choice(X))
-        while pick in initial_centers:
-            pick = list(secrets.choice(X))
+            clusters, centers, iterations = mykmeans(X, k)
+            drawClusters(clusters, centers, k , mu_list)
 
-        initial_centers.append(pick)
-
-    print(initial_centers)
-
-    clusters, centers, iterations = mykmeans(X, k, c)
-    drawClusters(clusters, centers)
+            if k == 3:
+                accuracy = getAccuracy(X, label, clusters)
+                print (f'accuracy = {accuracy}%')
