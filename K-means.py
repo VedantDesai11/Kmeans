@@ -6,7 +6,7 @@ import secrets
 from itertools import permutations
 
 
-def drawClusters(clusters, centers, k, mu):
+def drawClusters(plotnumber, clusters, centers, k, mu):
 
     clusterX = []
     clusterY = []
@@ -23,8 +23,9 @@ def drawClusters(clusters, centers, k, mu):
         plt.scatter(clusterX[x], clusterY[x])
         plt.scatter([centers[x][0]], [centers[x][1]], marker='X', s=20 * 4)
 
+
+    plt.savefig(f'{plotnumber}')
     plt.show()
-    plt.savefig(f'Clusters={k}_mu={mu}')
 
 
 def euclideanDistance(one, two):
@@ -122,13 +123,18 @@ def createData(mu_list, sigma, N):
 
 def getAccuracy(X, y, clusters):
 
+
     combinations = list(permutations([0, 1, 2]))
+
     accuracies = []
+
     for combination in combinations:
+
         labels = np.zeros(len(X))
+
         for label, cluster in enumerate(clusters):
-            for point in cluster:
-                index = np.where(X == point)[0][0]
+            for point in cluster: # [0,1,2]
+                index = np.where(X == point)[0][0] # 8
                 labels[index] = combination[label]
 
         accuracies.append(round(len([labels[i] for i in range(0, len(labels)) if labels[i] == y[i]]) / len(labels) * 100, 2))
@@ -138,28 +144,32 @@ def getAccuracy(X, y, clusters):
 
 if __name__ == "__main__":
 
+    plotnumber = 1
+
     # PARAMETERS
     mu_lists = [[[-3, 0], [3, 0], [0, 3]], [[-2, 0], [2, 0], [0, 2]]]
-    #mu_list = [[-2, 0], [2, 0], [0, 2]]
     sigma = np.array([[1,0.75],[0.75,1]])
     k_list = [2,3,4,5]
     N = 300
 
-    for k in k_list:
-        for mu_list in mu_lists:
-            
-            i = 0
-            X, label = createData(mu_list, sigma, N)
-            plt.scatter(X[i:i+N][:,0], X[i:i+N][:,1])
-            i = i + N
-            plt.scatter(X[i:i+N][:,0], X[i:i+N][:,1])
-            i = i + N
-            plt.scatter(X[i:i+N][:,0], X[i:i+N][:,1])
-            plt.show()
-            plt.savefig(f'Inital_Data_mu={mu_list}_k={k}')
+    for mu_list in mu_lists:
+
+        X, label = createData(mu_list, sigma, N)
+        i = 0
+        plt.scatter(X[i:i + N][:, 0], X[i:i + N][:, 1])
+        i = i + N
+        plt.scatter(X[i:i + N][:, 0], X[i:i + N][:, 1])
+        i = i + N
+        plt.scatter(X[i:i + N][:, 0], X[i:i + N][:, 1])
+        plt.savefig(f'{plotnumber}')
+        plotnumber += 1
+        plt.show()
+
+        for k in k_list:
 
             clusters, centers, iterations = mykmeans(X, k)
-            drawClusters(clusters, centers, k , mu_list)
+            drawClusters(plotnumber, clusters, centers, k , mu_list)
+            plotnumber += 1
 
             if k == 3:
                 accuracy = getAccuracy(X, label, clusters)
